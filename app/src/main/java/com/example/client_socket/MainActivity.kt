@@ -3,6 +3,7 @@ package com.example.client_socket
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
+import android.widget.ProgressBar
 import android.widget.RadioButton
 import android.widget.TextView
 import android.widget.Toast
@@ -10,6 +11,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import java.io.BufferedReader
+import java.io.BufferedWriter
+import java.io.Reader
 import java.net.Socket
 import java.nio.charset.Charset
 
@@ -19,7 +23,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var rbHora: RadioButton
     private lateinit var btEnviar: Button
     private lateinit var tvResultado: TextView
+    private lateinit var progressBar: ProgressBar
     private lateinit var clientSocket: Socket
+    private lateinit var inputStream: BufferedReader
+    private lateinit var outputStream: BufferedWriter
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,54 +43,71 @@ class MainActivity : AppCompatActivity() {
         rbHora = findViewById(R.id.rbHora)
         btEnviar = findViewById(R.id.btEnviar)
         tvResultado = findViewById(R.id.tvResultado)
+        progressBar = findViewById(R.id.progressBar)
     }
 
     fun btEnviarOnClick(view: View) {
 
-        val ip = "10.0.2.2"
-        val port = 12345
+        Thread {
 
-        try {
-            clientSocket = Socket(ip, port) //linha é bloqueante ou dará exceção
-            //Conectado com o server
+            try {
 
-            val outputStream = clientSocket.getOutputStream().bufferedWriter(Charset.forName("UTF-8"))
-            val inputStream = clientSocket.getInputStream().bufferedReader(Charset.forName("UTF-8"))
-            //Fluxo de IO criado
+                runOnUiThread {
+                    progressBar.visibility = View.VISIBLE
+                    btEnviar.isEnabled = false
+                }
 
-            var protocol = ""
+                Thread.sleep(2000)
 
-            when ( rbHora.isChecked ) {
-                true -> protocol = "hora"
-                false -> protocol = "data"
+
+
+                if ( ! ::clientSocket.isInitialized) {
+                    val ip = "10.0.2.2"
+                    val port = 12345
+
+                    clientSocket = Socket(ip, port) //linha é bloqueante ou dará exceção
+                    //Conectado com o server
+
+                    outputStream =
+                        clientSocket.getOutputStream().bufferedWriter(Charset.forName("UTF-8"))
+                    inputStream =
+                        clientSocket.getInputStream().bufferedReader(Charset.forName("UTF-8"))
+                    //Fluxo de IO criado
+                }
+
+                var protocol = ""
+
+                when (rbHora.isChecked) {
+                    true -> protocol = "hora"
+                    false -> protocol = "data"
+                }
+
+                outputStream.write(protocol + "\n")
+                outputStream.flush()
+                //Mensagem enviado ao servidor sem bloqueios
+
+                val result = inputStream.readLine() //linha
+                //Mensagem recebida do servidor
+
+                runOnUiThread {
+                    tvResultado.text = result
+                }
+
+            } catch (e: Exception) {
+                runOnUiThread {
+                    tvResultado.text = "Erro: " + e.message
+                }
             }
 
-            outputStream.write(protocol + "\n")
-            outputStream.flush()
-            //Mensagem enviado ao servidor sem bloqueios
+            runOnUiThread {
+                progressBar.visibility = View.GONE
+                btEnviar.isEnabled = true
+            }
+        }.start()
+    }
 
-            val result = inputStream.readLine() //linha
-            //Mensagem recebida do servidor
-
-            tvResultado.text = result
-
-        } catch (e: Exception) {
-            tvResultado.text = "Erro: " + e.message
-        } finally {
-            clientSocket.close()
-        }
-
-        var protocol = ""
-
-        when ( rbHora.isChecked ) {
-            true -> protocol = "hora"
-            false -> protocol = "data"
-        }
-
-        Toast.makeText(
-            this,
-            protocol,
-            Toast.LENGTH_SHORT
-        ).show()
+    override fun onStop() {
+        super.onStop()
+        clientSocket.close()
     }
 }
