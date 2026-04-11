@@ -10,6 +10,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import java.net.Socket
+import java.nio.charset.Charset
 
 class MainActivity : AppCompatActivity() {
 
@@ -17,6 +19,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var rbHora: RadioButton
     private lateinit var btEnviar: Button
     private lateinit var tvResultado: TextView
+    private lateinit var clientSocket: Socket
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,6 +38,39 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun btEnviarOnClick(view: View) {
+
+        val ip = "10.0.2.2"
+        val port = 12345
+
+        try {
+            clientSocket = Socket(ip, port) //linha é bloqueante ou dará exceção
+            //Conectado com o server
+
+            val outputStream = clientSocket.getOutputStream().bufferedWriter(Charset.forName("UTF-8"))
+            val inputStream = clientSocket.getInputStream().bufferedReader(Charset.forName("UTF-8"))
+            //Fluxo de IO criado
+
+            var protocol = ""
+
+            when ( rbHora.isChecked ) {
+                true -> protocol = "hora"
+                false -> protocol = "data"
+            }
+
+            outputStream.write(protocol + "\n")
+            outputStream.flush()
+            //Mensagem enviado ao servidor sem bloqueios
+
+            val result = inputStream.readLine() //linha
+            //Mensagem recebida do servidor
+
+            tvResultado.text = result
+
+        } catch (e: Exception) {
+            tvResultado.text = "Erro: " + e.message
+        } finally {
+            clientSocket.close()
+        }
 
         var protocol = ""
 
