@@ -1,14 +1,18 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
 }
 
 android {
     namespace = "com.example.client_socket"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
+    compileSdk = 35
+
+    buildFeatures {
+        buildConfig = true
     }
+
 
     defaultConfig {
         applicationId = "com.example.client_socket"
@@ -18,6 +22,17 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val properties = Properties()
+        val localPropertiesFile = project.rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localPropertiesFile.inputStream().use { properties.load(it) }
+        }
+
+        buildConfigField("String", "SERVER_IP", "\"${properties.getProperty("SERVER.IP")}\"")
+        buildConfigField("int", "SERVER_PORT", properties.getProperty("SERVER.PORT"))
+
+
     }
 
     buildTypes {
