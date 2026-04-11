@@ -78,24 +78,51 @@ class MainActivity : AppCompatActivity() {
                     val ip = BuildConfig.SERVER_IP
                     val port = BuildConfig.SERVER_PORT
 
+                    publishProgress(1)
+                    Thread.sleep(1000)
+
                     clientSocket = Socket(ip, port) //linha é bloqueante ou dará exceção
                     //Conectado com o server
 
+                    publishProgress(2)
+                    Thread.sleep(1000)
+
                     outputStream =
                         clientSocket.getOutputStream().bufferedWriter(Charset.forName("UTF-8"))
+                    publishProgress(3)
+                    Thread.sleep(1000)
                     inputStream =
                         clientSocket.getInputStream().bufferedReader(Charset.forName("UTF-8"))
                     //Fluxo de IO criado
+                    publishProgress(4)
+                    Thread.sleep(1000)
                 }
 
 
 
                 outputStream.write(protocol[0] + "\n")
+
+                publishProgress(5)
+                Thread.sleep(1000)
+
                 outputStream.flush()
+                publishProgress(6)
+                Thread.sleep(1000)
                 //Mensagem enviado ao servidor sem bloqueios
 
                 val result = inputStream.readLine() //linha
                 //Mensagem recebida do servidor
+                publishProgress(7)
+                Thread.sleep(1000)
+
+                publishProgress(8)
+                Thread.sleep(1000)
+
+                publishProgress(9)
+                Thread.sleep(1000)
+
+                publishProgress(10)
+                Thread.sleep(1000)
 
                 return result
 
@@ -109,6 +136,10 @@ class MainActivity : AppCompatActivity() {
             tvResultado.text = result
             progressBar.visibility = View.GONE
             btEnviar.isEnabled = true
+        }
+
+        override fun onProgressUpdate(vararg progresso: Int?) {
+            progressBar.setProgress(progresso[0] ?: 0)
         }
     }
 
