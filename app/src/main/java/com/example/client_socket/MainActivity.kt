@@ -12,11 +12,16 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.Reader
 import java.net.Socket
 import java.nio.charset.Charset
+import kotlin.plus
 
 class MainActivity : AppCompatActivity() {
 
@@ -51,7 +56,9 @@ class MainActivity : AppCompatActivity() {
 
         val protocol = if (rbData.isChecked) "data" else "hora"
 
-        ConexaoTask().execute(protocol)
+        lifecycleScope.launch {
+            conexaoTask(protocol)
+        }
     }
 
     override fun onStop() {
@@ -59,16 +66,15 @@ class MainActivity : AppCompatActivity() {
         clientSocket.close()
     }
 
-    inner class ConexaoTask : AsyncTask<String, Int, String>() {
-
-        override fun onPreExecute() {
-            super.onPreExecute()
+    suspend fun conexaoTask(protocol: String) {
+        withContext(Dispatchers.Main) {
             progressBar.visibility = View.VISIBLE
             btEnviar.isEnabled = false
         }
 
-        override fun doInBackground(vararg protocol: String?): String? {
+        var result = ""
 
+        withContext(Dispatchers.IO) {
             try {
 
                 Thread.sleep(2000)
@@ -78,71 +84,38 @@ class MainActivity : AppCompatActivity() {
                     val ip = BuildConfig.SERVER_IP
                     val port = BuildConfig.SERVER_PORT
 
-                    publishProgress(1)
-                    Thread.sleep(1000)
-
                     clientSocket = Socket(ip, port) //linha é bloqueante ou dará exceção
                     //Conectado com o server
 
-                    publishProgress(2)
-                    Thread.sleep(1000)
-
                     outputStream =
                         clientSocket.getOutputStream().bufferedWriter(Charset.forName("UTF-8"))
-                    publishProgress(3)
-                    Thread.sleep(1000)
                     inputStream =
                         clientSocket.getInputStream().bufferedReader(Charset.forName("UTF-8"))
                     //Fluxo de IO criado
-                    publishProgress(4)
-                    Thread.sleep(1000)
                 }
 
 
 
-                outputStream.write(protocol[0] + "\n")
+                outputStream.write(protocol + "\n")
 
-                publishProgress(5)
-                Thread.sleep(1000)
 
                 outputStream.flush()
-                publishProgress(6)
-                Thread.sleep(1000)
                 //Mensagem enviado ao servidor sem bloqueios
 
-                val result = inputStream.readLine() //linha
+                result = inputStream.readLine() //linha
                 //Mensagem recebida do servidor
-                publishProgress(7)
-                Thread.sleep(1000)
-
-                publishProgress(8)
-                Thread.sleep(1000)
-
-                publishProgress(9)
-                Thread.sleep(1000)
-
-                publishProgress(10)
-                Thread.sleep(1000)
-
-                return result
 
 
             }  catch (e: Exception) {
-                return e.message
+                result = e.message.toString()
             }
-        }
+        }// fim do Dispatchers.IO
 
-        override fun onPostExecute(result: String?) {
+        withContext(Dispatchers.Main) {
             tvResultado.text = result
             progressBar.visibility = View.GONE
             btEnviar.isEnabled = true
         }
-
-        override fun onProgressUpdate(vararg progresso: Int?) {
-            progressBar.setProgress(progresso[0] ?: 0)
-        }
     }
-
-
 
 }//Fim da MainActivity
