@@ -1,6 +1,7 @@
 package com.example.client_socket
 
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.AsyncTask
 import android.os.Bundle
 import android.view.View
@@ -50,8 +51,11 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
 
-        val service = Intent(this, MyService::class.java)
-        startService(service)
+//        val service = Intent(this, MyService::class.java)
+//        startService(service)
+
+        val receiver = MyReceiver()
+        registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
     }
 
     override fun onStop() {
